@@ -40,7 +40,7 @@ button {
 .shell {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 28px 0;
+  padding: 82px 0 28px;
 }
 
 .topbar {
@@ -468,6 +468,13 @@ canvas {
   align-items: start;
 }
 
+.editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .work-panels {
   display: flex;
   flex-wrap: wrap;
@@ -480,42 +487,95 @@ canvas {
 .code-tabs {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0;
+  border: 1px solid #cdd8d4;
+  border-radius: 8px 8px 0 0;
+  background: #dde4e1;
+  overflow: hidden;
 }
 
 .code-tab-list {
   display: flex;
   flex: 1;
-  gap: 6px;
   min-width: 0;
   overflow-x: auto;
 }
 
-.code-tab,
 .tab-add-button {
   min-height: 36px;
-  border-radius: 8px;
   background: #e6ece9;
   color: var(--ink);
   font-weight: 800;
 }
 
 .code-tab {
-  max-width: 180px;
-  padding: 0 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px;
+  align-items: center;
+  min-width: 132px;
+  max-width: 220px;
+  min-height: 38px;
+  border-right: 1px solid #c1cbc7;
+  background: #cfd8d4;
+  color: var(--ink);
+}
+
+.code-tab.active {
+  background: #f8fbfa;
+}
+
+.code-tab-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 100%;
+  padding: 0 10px;
+  background: transparent;
+  color: inherit;
+  font-weight: 700;
+}
+
+.code-tab-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.code-tab.active {
-  background: var(--accent);
-  color: white;
+.dirty-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 999px;
+  background: var(--accent-2);
+  opacity: 0;
+}
+
+.code-tab.dirty .dirty-dot {
+  opacity: 1;
+}
+
+.code-tab-close {
+  width: 24px;
+  height: 24px;
+  margin-right: 5px;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.code-tab-close:hover {
+  background: #e9efec;
+  color: var(--ink);
 }
 
 .tab-add-button {
-  width: 38px;
-  flex: 0 0 38px;
+  width: 42px;
+  min-height: 38px;
+  flex: 0 0 42px;
+  border-left: 1px solid #c1cbc7;
   font-size: 1.2rem;
 }
 
@@ -525,7 +585,7 @@ canvas {
   resize: vertical;
   padding: 14px;
   border: 1px solid #cdd8d4;
-  border-radius: 8px;
+  border-radius: 0 0 8px 8px;
   background: #fcfefd;
   color: var(--ink);
   font-family: "Cascadia Code", "Consolas", monospace;
@@ -565,7 +625,7 @@ canvas {
 @media (max-width: 520px) {
   .shell {
     width: min(100% - 20px, 1180px);
-    padding: 14px 0;
+    padding: 82px 0 14px;
   }
 
   .status-strip,

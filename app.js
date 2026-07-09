@@ -16,6 +16,7 @@ const toggleCanvas = document.querySelector("#toggleCanvas");
 const canvasPanel = document.querySelector("#canvasPanel");
 const typingPanel = document.querySelector("#typingPanel");
 const toggleTyping = document.querySelector("#toggleTyping");
+const openText = document.querySelector("#openText");
 const saveText = document.querySelector("#saveText");
 const codeTabList = document.querySelector("#codeTabList");
 const addCodeTab = document.querySelector("#addCodeTab");
@@ -56,8 +57,8 @@ const state = {
   lastPoint: null,
   activeCodeTabId: "notes",
   codeTabs: [
-    { id: "notes", name: "Notes", value: "" },
-    { id: "scratch", name: "Scratch", value: "" },
+    { id: "notes", name: "untitled-1.txt", value: "", dirty: false, fileHandle: null },
+    { id: "scratch", name: "scratch.txt", value: "", dirty: false, fileHandle: null },
   ],
 };
 
@@ -250,27 +251,85 @@ function activeCodeTab() {
   return state.codeTabs.find((tab) => tab.id === state.activeCodeTabId) || state.codeTabs[0];
 }
 
-function renderCodeTabs() {
+function renderCodeTabs(syncEditor = false) {
   codeTabList.innerHTML = "";
 
   state.codeTabs.forEach((tab) => {
-    const button = document.createElement("button");
-    button.className = tab.id === state.activeCodeTabId ? "code-tab active" : "code-tab";
-    button.type = "button";
-    button.textContent = tab.name;
-    button.setAttribute("role", "tab");
-    button.setAttribute("aria-selected", tab.id === state.activeCodeTabId ? "true" : "false");
-    button.addEventListener("click", () => {
+    const item = document.createElement("div");
+    item.className = [
+      "code-tab",
+      tab.id === state.activeCodeTabId ? "active" : "",
+      tab.dirty ? "dirty" : "",
+    ].filter(Boolean).join(" ");
+    item.setAttribute("role", "presentation");
+
+    const tabButton = document.createElement("button");
+    tabButton.className = "code-tab-name";
+    tabButton.type = "button";
+    tabButton.setAttribute("role", "tab");
+    tabButton.setAttribute("aria-selected", tab.id === state.activeCodeTabId ? "true" : "false");
+    tabButton.title = tab.dirty ? `${tab.name} - unsaved` : tab.name;
+    tabButton.addEventListener("click", () => {
       activeCodeTab().value = typingArea.value;
       state.activeCodeTabId = tab.id;
-      typingArea.value = tab.value;
       renderCodeTabs();
+      typingArea.value = tab.value;
       typingArea.focus();
     });
-    codeTabList.append(button);
+
+    const dot = document.createElement("span");
+    dot.className = "dirty-dot";
+    dot.setAttribute("aria-hidden", "true");
+
+    const name = document.createElement("span");
+    name.className = "code-tab-title";
+    name.textContent = tab.name;
+
+    const close = document.createElement("button");
+    close.className = "code-tab-close";
+    close.type = "button";
+    close.textContent = "x";
+    close.setAttribute("aria-label", `Close ${tab.name}`);
+    close.addEventListener("click", () => closeCodeTab(tab.id));
+
+    tabButton.append(dot, name);
+    item.append(tabButton, close);
+    codeTabList.append(item);
   });
 
-  typingArea.value = activeCodeTab().value;
+  if (syncEditor) {
+    typingArea.value = activeCodeTab().value;
+  }
+}
+
+function closeCodeTab(id) {
+  if (state.codeTabs.length === 1) {
+    state.codeTabs[0] = createCodeTab(1);
+    state.activeCodeTabId = state.codeTabs[0].id;
+    renderCodeTabs(true);
+    return;
+  }
+
+  const index = state.codeTabs.findIndex((tab) => tab.id === id);
+  state.codeTabs = state.codeTabs.filter((tab) => tab.id !== id);
+
+  if (state.activeCodeTabId === id) {
+    const nextTab = state.codeTabs[Math.max(0, index - 1)];
+    state.activeCodeTabId = nextTab.id;
+  }
+
+  renderCodeTabs(true);
+}
+
+function createCodeTab(number, overrides = {}) {
+  return {
+    id: crypto.randomUUID(),
+    name: `untitled-${number}.txt`,
+    value: "",
+    dirty: false,
+    fileHandle: null,
+    ...overrides,
+  };
 }
 
 function downloadBlob(blob, filename) {
@@ -284,11 +343,71 @@ function downloadBlob(blob, filename) {
   URL.revokeObjectURL(url);
 }
 
-function saveActiveText() {
+async function saveActiveText() {
   const tab = activeCodeTab();
   tab.value = typingArea.value;
-  const safeName = tab.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "notes";
-  downloadBlob(new Blob([tab.value], { type: "text/plain" }), `${safeName}.txt`);
+
+  if ("showSaveFilePicker" in window) {
+    if (!tab.fileHandle) {
+      tab.fileHandle = await window.showSaveFilePicker({
+        suggestedName: tab.name.endsWith(".txt") ? tab.name : `${tab.name}.txt`,
+        types: [
+          {
+            description: "Text files",
+            accept: { "text/plain": [".txt"] },
+          },
+        ],
+      });
+      tab.name = tab.fileHandle.name;
+    }
+
+    const writable = await tab.fileHandle.createWritable();
+    await writable.write(tab.value);
+    await writable.close();
+    tab.dirty = false;
+    renderCodeTabs();
+    return;
+  }
+
+  const safeName = tab.name.toLowerCase().replace(/[^a-z0-9.]+/g, "-").replace(/^-|-$/g, "") || "notes.txt";
+  downloadBlob(new Blob([tab.value], { type: "text/plain" }), safeName.endsWith(".txt") ? safeName : `${safeName}.txt`);
+  tab.dirty = false;
+  renderCodeTabs();
+}
+
+async function openTextFile() {
+  if (!("showOpenFilePicker" in window)) {
+    const tab = createCodeTab(state.codeTabs.length + 1);
+    activeCodeTab().value = typingArea.value;
+    state.codeTabs.push(tab);
+    state.activeCodeTabId = tab.id;
+    renderCodeTabs();
+    return;
+  }
+
+  const [fileHandle] = await window.showOpenFilePicker({
+    multiple: false,
+    types: [
+      {
+        description: "Text files",
+        accept: { "text/plain": [".txt", ".js", ".css", ".html", ".md"] },
+      },
+    ],
+  });
+  const file = await fileHandle.getFile();
+  const value = await file.text();
+  const tab = createCodeTab(state.codeTabs.length + 1, {
+    name: file.name,
+    value,
+    dirty: false,
+    fileHandle,
+  });
+
+  activeCodeTab().value = typingArea.value;
+  state.codeTabs.push(tab);
+  state.activeCodeTabId = tab.id;
+  renderCodeTabs();
+  typingArea.focus();
 }
 
 function saveDrawingImage() {
@@ -415,14 +534,30 @@ toggleTasks.addEventListener("click", () => {
 });
 
 typingArea.addEventListener("input", () => {
-  activeCodeTab().value = typingArea.value;
+  const tab = activeCodeTab();
+  tab.value = typingArea.value;
+  tab.dirty = true;
+  renderCodeTabs();
 });
 
-saveText.addEventListener("click", saveActiveText);
+openText.addEventListener("click", () => {
+  openTextFile().catch((error) => {
+    if (error.name !== "AbortError") {
+      console.error(error);
+    }
+  });
+});
+
+saveText.addEventListener("click", () => {
+  saveActiveText().catch((error) => {
+    if (error.name !== "AbortError") {
+      console.error(error);
+    }
+  });
+});
 
 addCodeTab.addEventListener("click", () => {
-  const number = state.codeTabs.length + 1;
-  const tab = { id: crypto.randomUUID(), name: `Tab ${number}`, value: "" };
+  const tab = createCodeTab(state.codeTabs.length + 1);
   activeCodeTab().value = typingArea.value;
   state.codeTabs.push(tab);
   state.activeCodeTabId = tab.id;
@@ -435,7 +570,11 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
 
     if (document.activeElement === typingArea || typingPanel.contains(document.activeElement)) {
-      saveActiveText();
+      saveActiveText().catch((error) => {
+        if (error.name !== "AbortError") {
+          console.error(error);
+        }
+      });
       return;
     }
 
@@ -488,7 +627,7 @@ canvas.addEventListener("pointerleave", () => {
 window.addEventListener("resize", resizeCanvas);
 
 renderTasks();
-renderCodeTabs();
+renderCodeTabs(true);
 toggleTasks.classList.add("active");
 toggleCanvas.classList.add("active");
 toggleTyping.classList.add("active");
