@@ -107,6 +107,10 @@ h2 {
   align-items: stretch;
 }
 
+.layout.tasks-collapsed {
+  grid-template-columns: 48px minmax(0, 1fr);
+}
+
 .panel {
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid var(--line);
@@ -119,6 +123,33 @@ h2 {
   min-height: 660px;
   padding: 18px;
   flex-direction: column;
+}
+
+.task-panel.collapsed {
+  width: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  align-self: start;
+  padding: 0;
+  overflow: hidden;
+}
+
+.task-panel.collapsed .panel-heading {
+  min-height: 48px;
+  justify-content: center;
+}
+
+.task-panel.collapsed .panel-title,
+.task-panel.collapsed .task-form,
+.task-panel.collapsed .task-list,
+.task-panel.collapsed #clearDone {
+  display: none;
+}
+
+.task-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .panel-heading {
@@ -265,6 +296,7 @@ input[type="range"] {
 
 .canvas-panel {
   display: flex;
+  flex: 1 0 100%;
   min-height: 660px;
   padding: 18px;
   flex-direction: column;
@@ -273,6 +305,7 @@ input[type="range"] {
 
 .canvas-panel.collapsed,
 .typing-panel.collapsed {
+  flex: 0 0 48px;
   width: 48px;
   min-width: 48px;
   min-height: 48px;
@@ -282,21 +315,34 @@ input[type="range"] {
 }
 
 .canvas-panel.collapsed .panel-heading,
-.typing-panel.collapsed .panel-heading {
+.typing-panel.collapsed .panel-heading,
+.task-panel.collapsed .panel-heading {
   min-height: 48px;
   justify-content: center;
 }
 
-.canvas-panel.collapsed .panel-heading > div,
+.canvas-panel.collapsed .panel-title,
 .canvas-panel.collapsed .toolbar > :not(.collapse-button),
 .canvas-panel.collapsed .canvas-wrap,
-.typing-panel.collapsed .panel-heading > div,
+.typing-panel.collapsed .panel-title,
 .typing-panel.collapsed textarea {
   display: none;
 }
 
 .canvas-panel.collapsed .toolbar {
   justify-content: center;
+}
+
+.canvas-panel.collapsed .collapse-button,
+.typing-panel.collapsed .collapse-button,
+.task-panel.collapsed .collapse-button {
+  display: flex;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
 }
 
 .toolbar {
@@ -333,15 +379,81 @@ input[type="range"] {
 }
 
 .collapse-button {
+  display: flex;
   width: 40px;
   min-width: 40px;
   height: 40px;
+  align-items: center;
+  justify-content: center;
   border-radius: 8px;
   background: var(--accent);
   color: white;
   font-size: 1.2rem;
   font-weight: 900;
   line-height: 1;
+}
+
+.button-icon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  background: currentColor;
+}
+
+.drawing-icon {
+  clip-path: polygon(18% 72%, 68% 22%, 82% 36%, 32% 86%, 14% 90%);
+}
+
+.code-icon {
+  position: relative;
+  background: transparent;
+}
+
+.code-icon::before,
+.code-icon::after {
+  position: absolute;
+  top: 5px;
+  width: 9px;
+  height: 12px;
+  border: solid currentColor;
+  content: "";
+}
+
+.code-icon::before {
+  left: 1px;
+  border-width: 0 0 3px 3px;
+  transform: skewX(-18deg) rotate(35deg);
+}
+
+.code-icon::after {
+  right: 1px;
+  border-width: 3px 3px 0 0;
+  transform: skewX(-18deg) rotate(35deg);
+}
+
+.task-icon {
+  position: relative;
+  background: transparent;
+}
+
+.task-icon::before {
+  position: absolute;
+  inset: 3px 2px;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+  content: "";
+}
+
+.task-icon::after {
+  position: absolute;
+  left: 7px;
+  top: 8px;
+  width: 8px;
+  height: 5px;
+  border-left: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  content: "";
+  transform: rotate(-45deg);
 }
 
 .canvas-wrap {
@@ -379,11 +491,20 @@ canvas {
 
 .typing-panel {
   display: flex;
-  grid-column: 2;
+  flex: 1 0 100%;
   min-height: 260px;
   padding: 18px;
   flex-direction: column;
   gap: 14px;
+}
+
+.work-panels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-content: flex-start;
+  align-items: flex-start;
+  min-width: 0;
 }
 
 .typing-panel textarea {
@@ -406,6 +527,10 @@ canvas {
     grid-template-columns: 1fr;
   }
 
+  .layout.tasks-collapsed {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+
   .topbar {
     display: grid;
     align-items: start;
@@ -420,8 +545,8 @@ canvas {
     min-height: 430px;
   }
 
-  .typing-panel {
-    grid-column: auto;
+  .work-panels {
+    grid-column: 1 / -1;
   }
 }
 

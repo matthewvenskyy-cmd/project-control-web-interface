@@ -22,16 +22,21 @@
         </div>
       </section>
 
-      <section class="layout">
-        <aside class="panel task-panel" aria-label="Task list">
+      <section id="layout" class="layout">
+        <aside id="taskPanel" class="panel task-panel" aria-label="Task list">
           <div class="panel-heading">
-            <div>
+            <div class="panel-title">
               <p class="eyebrow">Next steps</p>
               <h2>To-do</h2>
             </div>
-            <button id="clearDone" class="icon-button" type="button" aria-label="Clear completed tasks" title="Clear completed">
-              OK
-            </button>
+            <div class="task-heading-actions">
+              <button id="clearDone" class="icon-button" type="button" aria-label="Clear completed tasks" title="Clear completed">
+                OK
+              </button>
+              <button id="toggleTasks" class="collapse-button task-collapse-button" type="button" aria-label="Collapse to-do area" title="Collapse to-do area">
+                <span class="button-icon task-icon" aria-hidden="true"></span>
+              </button>
+            </div>
           </div>
 
           <form id="taskForm" class="task-form">
@@ -42,36 +47,42 @@
           <ul id="taskList" class="task-list" aria-label="Tasks"></ul>
         </aside>
 
-        <section class="panel canvas-panel" aria-label="Drawing space">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">Sketch area</p>
-              <h2>Draw, map, scribble</h2>
+        <div class="work-panels">
+          <section id="canvasPanel" class="panel canvas-panel" aria-label="Drawing space">
+            <div class="panel-heading">
+              <div class="panel-title">
+                <p class="eyebrow">Sketch area</p>
+                <h2>Draw, map, scribble</h2>
+              </div>
+              <div class="toolbar" aria-label="Drawing tools">
+                <input id="colorPicker" type="color" value="#2364aa" aria-label="Brush color" title="Brush color" />
+                <input id="brushSize" type="range" min="2" max="28" value="6" aria-label="Brush size" title="Brush size" />
+                <button id="eraseMode" class="tool-button" type="button">Erase</button>
+                <button id="clearCanvas" class="tool-button" type="button">Clear</button>
+                <button id="toggleCanvas" class="collapse-button" type="button" aria-label="Collapse drawing area" title="Collapse drawing area">
+                  <span class="button-icon drawing-icon" aria-hidden="true"></span>
+                </button>
+              </div>
             </div>
-            <div class="toolbar" aria-label="Drawing tools">
-              <input id="colorPicker" type="color" value="#2364aa" aria-label="Brush color" title="Brush color" />
-              <input id="brushSize" type="range" min="2" max="28" value="6" aria-label="Brush size" title="Brush size" />
-              <button id="eraseMode" class="tool-button" type="button">Erase</button>
-              <button id="clearCanvas" class="tool-button" type="button">Clear</button>
-              <button id="toggleCanvas" class="collapse-button" type="button" aria-label="Collapse drawing area" title="Collapse drawing area">-</button>
+            <div class="canvas-wrap">
+              <canvas id="drawCanvas" aria-label="Freehand drawing canvas"></canvas>
+              <div id="eraserPreview" class="eraser-preview" aria-hidden="true"></div>
             </div>
-          </div>
-          <div class="canvas-wrap">
-            <canvas id="drawCanvas" aria-label="Freehand drawing canvas"></canvas>
-            <div id="eraserPreview" class="eraser-preview" aria-hidden="true"></div>
-          </div>
-        </section>
+          </section>
 
-        <section id="typingPanel" class="panel typing-panel" aria-label="Typing space">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">Typing area</p>
-              <h2>Notes and code</h2>
+          <section id="typingPanel" class="panel typing-panel" aria-label="Typing space">
+            <div class="panel-heading">
+              <div class="panel-title">
+                <p class="eyebrow">Typing area</p>
+                <h2>Notes and code</h2>
+              </div>
+              <button id="toggleTyping" class="collapse-button" type="button" aria-label="Collapse typing area" title="Collapse typing area">
+                <span class="button-icon code-icon" aria-hidden="true"></span>
+              </button>
             </div>
-            <button id="toggleTyping" class="collapse-button" type="button" aria-label="Collapse typing area" title="Collapse typing area">-</button>
-          </div>
-          <textarea id="typingArea" spellcheck="false" placeholder="Write notes, paste code, outline a plan..."></textarea>
-        </section>
+            <textarea id="typingArea" spellcheck="false" placeholder="Write notes, paste code, outline a plan..."></textarea>
+          </section>
+        </div>
       </section>
     </main>
 

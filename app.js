@@ -3,12 +3,16 @@ const taskInput = document.querySelector("#taskInput");
 const taskList = document.querySelector("#taskList");
 const taskCount = document.querySelector("#taskCount");
 const clearDone = document.querySelector("#clearDone");
+const layout = document.querySelector("#layout");
+const taskPanel = document.querySelector("#taskPanel");
+const toggleTasks = document.querySelector("#toggleTasks");
 const canvas = document.querySelector("#drawCanvas");
 const colorPicker = document.querySelector("#colorPicker");
 const brushSize = document.querySelector("#brushSize");
 const eraseMode = document.querySelector("#eraseMode");
 const clearCanvas = document.querySelector("#clearCanvas");
 const toggleCanvas = document.querySelector("#toggleCanvas");
+const canvasPanel = document.querySelector("#canvasPanel");
 const typingPanel = document.querySelector("#typingPanel");
 const toggleTyping = document.querySelector("#toggleTyping");
 const eraserPreview = document.querySelector("#eraserPreview");
@@ -208,13 +212,19 @@ function renderTask(task) {
 
 function setPanelCollapsed(panel, button, collapsed, name) {
   panel.classList.toggle("collapsed", collapsed);
-  button.textContent = collapsed ? "+" : "-";
   button.setAttribute("aria-label", collapsed ? `Expand ${name} area` : `Collapse ${name} area`);
   button.title = collapsed ? `Expand ${name} area` : `Collapse ${name} area`;
 
   if (panel.classList.contains("canvas-panel") && !collapsed) {
     requestAnimationFrame(resizeCanvas);
   }
+}
+
+function setTaskPanelCollapsed(collapsed) {
+  taskPanel.classList.toggle("collapsed", collapsed);
+  layout.classList.toggle("tasks-collapsed", collapsed);
+  toggleTasks.setAttribute("aria-label", collapsed ? "Expand to-do area" : "Collapse to-do area");
+  toggleTasks.title = collapsed ? "Expand to-do area" : "Collapse to-do area";
 }
 
 function renderTasks() {
@@ -311,11 +321,15 @@ clearCanvas.addEventListener("click", () => {
 });
 
 toggleCanvas.addEventListener("click", () => {
-  setPanelCollapsed(toggleCanvas.closest(".canvas-panel"), toggleCanvas, !toggleCanvas.closest(".canvas-panel").classList.contains("collapsed"), "drawing");
+  setPanelCollapsed(canvasPanel, toggleCanvas, !canvasPanel.classList.contains("collapsed"), "drawing");
 });
 
 toggleTyping.addEventListener("click", () => {
   setPanelCollapsed(typingPanel, toggleTyping, !typingPanel.classList.contains("collapsed"), "typing");
+});
+
+toggleTasks.addEventListener("click", () => {
+  setTaskPanelCollapsed(!taskPanel.classList.contains("collapsed"));
 });
 
 brushSize.addEventListener("input", () => {
