@@ -11,10 +11,15 @@ const colorPicker = document.querySelector("#colorPicker");
 const brushSize = document.querySelector("#brushSize");
 const eraseMode = document.querySelector("#eraseMode");
 const clearCanvas = document.querySelector("#clearCanvas");
+const saveCanvas = document.querySelector("#saveCanvas");
 const toggleCanvas = document.querySelector("#toggleCanvas");
 const canvasPanel = document.querySelector("#canvasPanel");
 const typingPanel = document.querySelector("#typingPanel");
 const toggleTyping = document.querySelector("#toggleTyping");
+const saveText = document.querySelector("#saveText");
+const codeTabList = document.querySelector("#codeTabList");
+const addCodeTab = document.querySelector("#addCodeTab");
+const typingArea = document.querySelector("#typingArea");
 const eraserPreview = document.querySelector("#eraserPreview");
 const context = canvas.getContext("2d");
 
@@ -49,6 +54,11 @@ const state = {
   erasing: false,
   drawing: false,
   lastPoint: null,
+  activeCodeTabId: "notes",
+  codeTabs: [
+    { id: "notes", name: "Notes", value: "" },
+    { id: "scratch", name: "Scratch", value: "" },
+  ],
 };
 
 function countOpenTasks(tasks) {
@@ -214,9 +224,10 @@ function setPanelCollapsed(panel, button, collapsed, name) {
   panel.classList.toggle("collapsed", collapsed);
   button.setAttribute("aria-label", collapsed ? `Expand ${name} area` : `Collapse ${name} area`);
   button.title = collapsed ? `Expand ${name} area` : `Collapse ${name} area`;
+  button.classList.toggle("active", !collapsed);
 
   if (panel.classList.contains("canvas-panel") && !collapsed) {
-    requestAnimationFrame(resizeCanvas);
+    scheduleCanvasResize();
   }
 }
 
@@ -225,6 +236,8 @@ function setTaskPanelCollapsed(collapsed) {
   layout.classList.toggle("tasks-collapsed", collapsed);
   toggleTasks.setAttribute("aria-label", collapsed ? "Expand to-do area" : "Collapse to-do area");
   toggleTasks.title = collapsed ? "Expand to-do area" : "Collapse to-do area";
+  toggleTasks.classList.toggle("active", !collapsed);
+  scheduleCanvasResize();
 }
 
 function renderTasks() {
@@ -233,8 +246,75 @@ function renderTasks() {
   taskCount.textContent = countOpenTasks(state.tasks);
 }
 
+function activeCodeTab() {
+  return state.codeTabs.find((tab) => tab.id === state.activeCodeTabId) || state.codeTabs[0];
+}
+
+function renderCodeTabs() {
+  codeTabList.innerHTML = "";
+
+  state.codeTabs.forEach((tab) => {
+    const button = document.createElement("button");
+    button.className = tab.id === state.activeCodeTabId ? "code-tab active" : "code-tab";
+    button.type = "button";
+    button.textContent = tab.name;
+    button.setAttribute("role", "tab");
+    button.setAttribute("aria-selected", tab.id === state.activeCodeTabId ? "true" : "false");
+    button.addEventListener("click", () => {
+      activeCodeTab().value = typingArea.value;
+      state.activeCodeTabId = tab.id;
+      typingArea.value = tab.value;
+      renderCodeTabs();
+      typingArea.focus();
+    });
+    codeTabList.append(button);
+  });
+
+  typingArea.value = activeCodeTab().value;
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function saveActiveText() {
+  const tab = activeCodeTab();
+  tab.value = typingArea.value;
+  const safeName = tab.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "notes";
+  downloadBlob(new Blob([tab.value], { type: "text/plain" }), `${safeName}.txt`);
+}
+
+function saveDrawingImage() {
+  canvas.toBlob((blob) => {
+    if (blob) {
+      downloadBlob(blob, "project-sketch.png");
+    }
+  }, "image/png");
+}
+
+function scheduleCanvasResize() {
+  requestAnimationFrame(resizeCanvas);
+  window.setTimeout(resizeCanvas, 180);
+}
+
 function resizeCanvas() {
+  if (canvasPanel.classList.contains("collapsed")) {
+    return;
+  }
+
   const rect = canvas.getBoundingClientRect();
+
+  if (!rect.width || !rect.height) {
+    return;
+  }
+
   const image = context.getImageData(0, 0, canvas.width || 1, canvas.height || 1);
   const ratio = window.devicePixelRatio || 1;
 
@@ -320,6 +400,8 @@ clearCanvas.addEventListener("click", () => {
   context.clearRect(0, 0, canvas.width, canvas.height);
 });
 
+saveCanvas.addEventListener("click", saveDrawingImage);
+
 toggleCanvas.addEventListener("click", () => {
   setPanelCollapsed(canvasPanel, toggleCanvas, !canvasPanel.classList.contains("collapsed"), "drawing");
 });
@@ -330,6 +412,35 @@ toggleTyping.addEventListener("click", () => {
 
 toggleTasks.addEventListener("click", () => {
   setTaskPanelCollapsed(!taskPanel.classList.contains("collapsed"));
+});
+
+typingArea.addEventListener("input", () => {
+  activeCodeTab().value = typingArea.value;
+});
+
+saveText.addEventListener("click", saveActiveText);
+
+addCodeTab.addEventListener("click", () => {
+  const number = state.codeTabs.length + 1;
+  const tab = { id: crypto.randomUUID(), name: `Tab ${number}`, value: "" };
+  activeCodeTab().value = typingArea.value;
+  state.codeTabs.push(tab);
+  state.activeCodeTabId = tab.id;
+  renderCodeTabs();
+  typingArea.focus();
+});
+
+document.addEventListener("keydown", (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+    event.preventDefault();
+
+    if (document.activeElement === typingArea || typingPanel.contains(document.activeElement)) {
+      saveActiveText();
+      return;
+    }
+
+    saveDrawingImage();
+  }
 });
 
 brushSize.addEventListener("input", () => {
@@ -377,4 +488,8 @@ canvas.addEventListener("pointerleave", () => {
 window.addEventListener("resize", resizeCanvas);
 
 renderTasks();
+renderCodeTabs();
+toggleTasks.classList.add("active");
+toggleCanvas.classList.add("active");
+toggleTyping.classList.add("active");
 requestAnimationFrame(resizeCanvas);

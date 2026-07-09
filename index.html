@@ -8,16 +8,30 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <button id="toggleTasks" class="collapse-button page-task-toggle" type="button" aria-label="Collapse to-do area" title="Collapse to-do area">
+      <span class="button-icon task-icon" aria-hidden="true"></span>
+    </button>
+
     <main class="shell">
       <section class="topbar" aria-label="Project overview">
         <div>
           <p class="eyebrow">Project Control</p>
           <h1>Today's workspace</h1>
         </div>
-        <div class="status-strip">
-          <div>
-            <span id="taskCount">0</span>
-            <small>open tasks</small>
+        <div class="top-actions">
+          <div class="panel-dock" aria-label="Workspace panel controls">
+            <button id="toggleCanvas" class="collapse-button" type="button" aria-label="Collapse drawing area" title="Collapse drawing area">
+              <span class="button-icon drawing-icon" aria-hidden="true"></span>
+            </button>
+            <button id="toggleTyping" class="collapse-button" type="button" aria-label="Collapse typing area" title="Collapse typing area">
+              <span class="button-icon code-icon" aria-hidden="true"></span>
+            </button>
+          </div>
+          <div class="status-strip">
+            <div>
+              <span id="taskCount">0</span>
+              <small>open tasks</small>
+            </div>
           </div>
         </div>
       </section>
@@ -32,9 +46,6 @@
             <div class="task-heading-actions">
               <button id="clearDone" class="icon-button" type="button" aria-label="Clear completed tasks" title="Clear completed">
                 OK
-              </button>
-              <button id="toggleTasks" class="collapse-button task-collapse-button" type="button" aria-label="Collapse to-do area" title="Collapse to-do area">
-                <span class="button-icon task-icon" aria-hidden="true"></span>
               </button>
             </div>
           </div>
@@ -59,9 +70,7 @@
                 <input id="brushSize" type="range" min="2" max="28" value="6" aria-label="Brush size" title="Brush size" />
                 <button id="eraseMode" class="tool-button" type="button">Erase</button>
                 <button id="clearCanvas" class="tool-button" type="button">Clear</button>
-                <button id="toggleCanvas" class="collapse-button" type="button" aria-label="Collapse drawing area" title="Collapse drawing area">
-                  <span class="button-icon drawing-icon" aria-hidden="true"></span>
-                </button>
+                <button id="saveCanvas" class="tool-button" type="button">Save PNG</button>
               </div>
             </div>
             <div class="canvas-wrap">
@@ -76,9 +85,11 @@
                 <p class="eyebrow">Typing area</p>
                 <h2>Notes and code</h2>
               </div>
-              <button id="toggleTyping" class="collapse-button" type="button" aria-label="Collapse typing area" title="Collapse typing area">
-                <span class="button-icon code-icon" aria-hidden="true"></span>
-              </button>
+              <button id="saveText" class="tool-button" type="button">Save TXT</button>
+            </div>
+            <div class="code-tabs" aria-label="Code tabs">
+              <div id="codeTabList" class="code-tab-list" role="tablist"></div>
+              <button id="addCodeTab" class="tab-add-button" type="button" aria-label="Add typing tab" title="Add tab">+</button>
             </div>
             <textarea id="typingArea" spellcheck="false" placeholder="Write notes, paste code, outline a plan..."></textarea>
           </section>
