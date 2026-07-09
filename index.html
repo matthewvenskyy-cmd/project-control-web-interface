@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project Control</title>
+    <link rel="icon" href="assets/stump.jpg" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="topbar" aria-label="Project overview">
+        <div>
+          <p class="eyebrow">Project Control</p>
+          <h1>Today's workspace</h1>
+        </div>
+        <div class="status-strip">
+          <div>
+            <span id="taskCount">0</span>
+            <small>open tasks</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="layout">
+        <aside class="panel task-panel" aria-label="Task list">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Next steps</p>
+              <h2>To-do</h2>
+            </div>
+            <button id="clearDone" class="icon-button" type="button" aria-label="Clear completed tasks" title="Clear completed">
+              OK
+            </button>
+          </div>
+
+          <form id="taskForm" class="task-form">
+            <input id="taskInput" type="text" placeholder="Add something concrete..." autocomplete="off" />
+            <button type="submit">Add</button>
+          </form>
+
+          <ul id="taskList" class="task-list" aria-label="Tasks"></ul>
+        </aside>
+
+        <section class="panel canvas-panel" aria-label="Drawing space">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Sketch area</p>
+              <h2>Draw, map, scribble</h2>
+            </div>
+            <div class="toolbar" aria-label="Drawing tools">
+              <input id="colorPicker" type="color" value="#2364aa" aria-label="Brush color" title="Brush color" />
+              <input id="brushSize" type="range" min="2" max="28" value="6" aria-label="Brush size" title="Brush size" />
+              <button id="eraseMode" class="tool-button" type="button">Erase</button>
+              <button id="clearCanvas" class="tool-button" type="button">Clear</button>
+              <button id="toggleCanvas" class="collapse-button" type="button" aria-label="Collapse drawing area" title="Collapse drawing area">-</button>
+            </div>
+          </div>
+          <div class="canvas-wrap">
+            <canvas id="drawCanvas" aria-label="Freehand drawing canvas"></canvas>
+            <div id="eraserPreview" class="eraser-preview" aria-hidden="true"></div>
+          </div>
+        </section>
+
+        <section id="typingPanel" class="panel typing-panel" aria-label="Typing space">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Typing area</p>
+              <h2>Notes and code</h2>
+            </div>
+            <button id="toggleTyping" class="collapse-button" type="button" aria-label="Collapse typing area" title="Collapse typing area">-</button>
+          </div>
+          <textarea id="typingArea" spellcheck="false" placeholder="Write notes, paste code, outline a plan..."></textarea>
+        </section>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
