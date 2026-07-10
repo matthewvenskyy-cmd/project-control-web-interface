@@ -96,6 +96,24 @@
             </div>
             <textarea id="typingArea" spellcheck="false" placeholder="Write notes, paste code, outline a plan..."></textarea>
           </section>
+
+          <section id="screenshotPanel" class="panel screenshot-panel" aria-label="Screenshot organizer">
+            <div class="panel-heading">
+              <div class="panel-title">
+                <p class="eyebrow">Screenshots</p>
+                <h2>Paste, preview, copy</h2>
+              </div>
+              <div class="screenshot-actions">
+                <label class="tool-button upload-button" for="screenshotInput">Upload</label>
+                <input id="screenshotInput" type="file" accept="image/*" multiple />
+              </div>
+            </div>
+            <div id="screenshotDropzone" class="screenshot-dropzone" tabindex="0">
+              <strong>Paste or drop screenshots here</strong>
+              <span>Images stay in this browser on this PC.</span>
+            </div>
+            <div id="screenshotGrid" class="screenshot-grid" aria-live="polite"></div>
+          </section>
         </div>
       </section>
     </main>

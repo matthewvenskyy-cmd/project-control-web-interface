@@ -206,8 +206,8 @@ h2 {
 
 .task-row {
   display: grid;
-  grid-template-columns: 28px 28px 28px minmax(0, 1fr) 32px;
-  gap: 6px;
+  grid-template-columns: 28px 18px 28px minmax(0, 1fr) 28px;
+  gap: 4px;
   align-items: center;
   min-height: 46px;
   padding: 8px;
@@ -220,14 +220,14 @@ h2 {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin: 0 0 0 30px;
+  margin: 0 0 0 22px;
   padding: 0;
   list-style: none;
 }
 
 .task-action,
 .toggle-subtasks {
-  width: 28px;
+  width: 18px;
   height: 28px;
   border-radius: 6px;
   background: #e6ece9;
@@ -241,7 +241,7 @@ h2 {
 }
 
 .toggle-spacer {
-  width: 28px;
+  width: 0;
   height: 28px;
   visibility: hidden;
 }
@@ -266,7 +266,7 @@ h2 {
 }
 
 .remove-task {
-  width: 32px;
+  width: 28px;
   height: 32px;
   background: transparent;
   color: var(--warn);
@@ -462,6 +462,114 @@ canvas {
   padding: 18px;
   flex-direction: column;
   gap: 14px;
+}
+
+.screenshot-panel {
+  display: flex;
+  flex: 1 0 100%;
+  min-height: 280px;
+  padding: 18px;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.screenshot-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.upload-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+#screenshotInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.screenshot-dropzone {
+  display: flex;
+  min-height: 96px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  border: 1px dashed #aec0bb;
+  border-radius: 8px;
+  background: #f7faf8;
+  color: var(--muted);
+  text-align: center;
+}
+
+.screenshot-dropzone strong {
+  color: var(--ink);
+}
+
+.screenshot-dropzone.active {
+  border-color: var(--accent);
+  background: #eef6f2;
+}
+
+.screenshot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.screenshot-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfc;
+}
+
+.screenshot-card img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: contain;
+  border: 1px solid #d8e3df;
+  border-radius: 6px;
+  background: #f3f7f5;
+}
+
+.screenshot-name {
+  min-width: 0;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: white;
+  color: var(--ink);
+}
+
+.screenshot-card-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.mini-button {
+  min-height: 32px;
+  border-radius: 6px;
+  background: #e6ece9;
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.mini-button.delete {
+  color: var(--warn);
 }
 
 .typing-panel .panel-heading {

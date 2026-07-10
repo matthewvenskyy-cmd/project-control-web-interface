@@ -21,10 +21,18 @@ const saveText = document.querySelector("#saveText");
 const codeTabList = document.querySelector("#codeTabList");
 const addCodeTab = document.querySelector("#addCodeTab");
 const typingArea = document.querySelector("#typingArea");
+const screenshotInput = document.querySelector("#screenshotInput");
+const screenshotDropzone = document.querySelector("#screenshotDropzone");
+const screenshotGrid = document.querySelector("#screenshotGrid");
 const eraserPreview = document.querySelector("#eraserPreview");
 const context = canvas.getContext("2d");
+const STORAGE_KEY = "project-control-workspace-v1";
+let saveTimer = null;
 
-const state = {
+let state = createDefaultState();
+
+function createDefaultState() {
+  return {
   tasks: [
     {
       id: crypto.randomUUID(),
@@ -55,12 +63,70 @@ const state = {
   erasing: false,
   drawing: false,
   lastPoint: null,
+  panels: {
+    tasksCollapsed: false,
+    canvasCollapsed: false,
+    typingCollapsed: false,
+  },
   activeCodeTabId: "notes",
   codeTabs: [
     { id: "notes", name: "untitled-1.txt", value: "", dirty: false, fileHandle: null },
     { id: "scratch", name: "scratch.txt", value: "", dirty: false, fileHandle: null },
   ],
-};
+  screenshots: [],
+  canvasImage: null,
+  };
+}
+
+function loadWorkspaceState() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+
+    if (!stored) {
+      return;
+    }
+
+    state = {
+      ...state,
+      tasks: Array.isArray(stored.tasks) ? stored.tasks : state.tasks,
+      panels: { ...state.panels, ...(stored.panels || {}) },
+      activeCodeTabId: stored.activeCodeTabId || state.activeCodeTabId,
+      codeTabs: Array.isArray(stored.codeTabs) && stored.codeTabs.length
+        ? stored.codeTabs.map((tab) => ({ ...tab, fileHandle: null }))
+        : state.codeTabs,
+      screenshots: Array.isArray(stored.screenshots) ? stored.screenshots : [],
+      canvasImage: stored.canvasImage || null,
+    };
+
+    if (!state.codeTabs.some((tab) => tab.id === state.activeCodeTabId)) {
+      state.activeCodeTabId = state.codeTabs[0].id;
+    }
+  } catch (error) {
+    console.warn("Could not load saved workspace state.", error);
+  }
+}
+
+function saveWorkspaceStateNow() {
+  const payload = {
+    tasks: state.tasks,
+    panels: state.panels,
+    activeCodeTabId: state.activeCodeTabId,
+    codeTabs: state.codeTabs.map(({ fileHandle, ...tab }) => tab),
+    screenshots: state.screenshots,
+    canvasImage: state.canvasImage,
+  };
+
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch (error) {
+    console.warn("Could not save workspace state. Browser storage may be full.", error);
+  }
+}
+
+function queueWorkspaceSave() {
+  window.clearTimeout(saveTimer);
+  saveTimer = window.setTimeout(saveWorkspaceStateNow, 250);
+}
 
 function countOpenTasks(tasks) {
   return tasks.reduce((count, task) => {
@@ -136,6 +202,7 @@ function renderTask(task) {
     task.children.push(createBlankTask());
     task.collapsed = false;
     renderTasks();
+    queueWorkspaceSave();
   });
 
   const toggle = document.createElement("button");
@@ -149,6 +216,7 @@ function renderTask(task) {
     toggle.addEventListener("click", () => {
       task.collapsed = !task.collapsed;
       renderTasks();
+      queueWorkspaceSave();
     });
   } else {
     toggle.className = "toggle-spacer";
@@ -161,6 +229,7 @@ function renderTask(task) {
   checkbox.addEventListener("change", () => {
     task.done = checkbox.checked;
     renderTasks();
+    queueWorkspaceSave();
   });
 
   const text = task.editing ? document.createElement("input") : document.createElement("span");
@@ -180,17 +249,20 @@ function renderTask(task) {
       }
 
       renderTasks();
+      queueWorkspaceSave();
     });
     text.addEventListener("keydown", (event) => {
       if (event.key === "Enter" && text.value.trim()) {
         task.text = text.value.trim();
         task.editing = false;
         renderTasks();
+        queueWorkspaceSave();
       }
 
       if (event.key === "Escape" && !text.value.trim()) {
         state.tasks = removeTask(state.tasks, task.id);
         renderTasks();
+        queueWorkspaceSave();
       }
     });
     requestAnimationFrame(() => text.focus());
@@ -206,6 +278,7 @@ function renderTask(task) {
   remove.addEventListener("click", () => {
     state.tasks = removeTask(state.tasks, task.id);
     renderTasks();
+    queueWorkspaceSave();
   });
 
   row.append(addSubtask, toggle, checkbox, text, remove);
@@ -227,9 +300,19 @@ function setPanelCollapsed(panel, button, collapsed, name) {
   button.title = collapsed ? `Expand ${name} area` : `Collapse ${name} area`;
   button.classList.toggle("active", !collapsed);
 
+  if (panel === canvasPanel) {
+    state.panels.canvasCollapsed = collapsed;
+  }
+
+  if (panel === typingPanel) {
+    state.panels.typingCollapsed = collapsed;
+  }
+
   if (panel.classList.contains("canvas-panel") && !collapsed) {
     scheduleCanvasResize();
   }
+
+  queueWorkspaceSave();
 }
 
 function setTaskPanelCollapsed(collapsed) {
@@ -238,7 +321,9 @@ function setTaskPanelCollapsed(collapsed) {
   toggleTasks.setAttribute("aria-label", collapsed ? "Expand to-do area" : "Collapse to-do area");
   toggleTasks.title = collapsed ? "Expand to-do area" : "Collapse to-do area";
   toggleTasks.classList.toggle("active", !collapsed);
+  state.panels.tasksCollapsed = collapsed;
   scheduleCanvasResize();
+  queueWorkspaceSave();
 }
 
 function renderTasks() {
@@ -275,6 +360,7 @@ function renderCodeTabs(syncEditor = false) {
       renderCodeTabs();
       typingArea.value = tab.value;
       typingArea.focus();
+      queueWorkspaceSave();
     });
 
     const dot = document.createElement("span");
@@ -307,6 +393,7 @@ function closeCodeTab(id) {
     state.codeTabs[0] = createCodeTab(1);
     state.activeCodeTabId = state.codeTabs[0].id;
     renderCodeTabs(true);
+    queueWorkspaceSave();
     return;
   }
 
@@ -319,6 +406,7 @@ function closeCodeTab(id) {
   }
 
   renderCodeTabs(true);
+  queueWorkspaceSave();
 }
 
 function createCodeTab(number, overrides = {}) {
@@ -366,6 +454,7 @@ async function saveActiveText() {
     await writable.close();
     tab.dirty = false;
     renderCodeTabs();
+    queueWorkspaceSave();
     return;
   }
 
@@ -373,6 +462,7 @@ async function saveActiveText() {
   downloadBlob(new Blob([tab.value], { type: "text/plain" }), safeName.endsWith(".txt") ? safeName : `${safeName}.txt`);
   tab.dirty = false;
   renderCodeTabs();
+  queueWorkspaceSave();
 }
 
 async function openTextFile() {
@@ -382,6 +472,7 @@ async function openTextFile() {
     state.codeTabs.push(tab);
     state.activeCodeTabId = tab.id;
     renderCodeTabs();
+    queueWorkspaceSave();
     return;
   }
 
@@ -408,6 +499,7 @@ async function openTextFile() {
   state.activeCodeTabId = tab.id;
   renderCodeTabs();
   typingArea.focus();
+  queueWorkspaceSave();
 }
 
 function saveDrawingImage() {
@@ -416,6 +508,39 @@ function saveDrawingImage() {
       downloadBlob(blob, "project-sketch.png");
     }
   }, "image/png");
+}
+
+function rememberCanvas() {
+  if (canvasPanel.classList.contains("collapsed") || !canvas.width || !canvas.height) {
+    return;
+  }
+
+  try {
+    state.canvasImage = canvas.toDataURL("image/png");
+    queueWorkspaceSave();
+  } catch (error) {
+    console.warn("Could not save sketch locally.", error);
+  }
+}
+
+function restoreCanvasImage() {
+  if (!state.canvasImage) {
+    return;
+  }
+
+  const image = new Image();
+  image.addEventListener("load", () => {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    const rect = canvas.getBoundingClientRect();
+    context.drawImage(image, 0, 0, rect.width, rect.height);
+  });
+  image.src = state.canvasImage;
+}
+
+function applySavedPanels() {
+  setTaskPanelCollapsed(Boolean(state.panels.tasksCollapsed));
+  setPanelCollapsed(canvasPanel, toggleCanvas, Boolean(state.panels.canvasCollapsed), "drawing");
+  setPanelCollapsed(typingPanel, toggleTyping, Boolean(state.panels.typingCollapsed), "typing");
 }
 
 function scheduleCanvasResize() {
@@ -448,6 +573,116 @@ function resizeCanvas() {
     saved.getContext("2d").putImageData(image, 0, 0);
     context.drawImage(saved, 0, 0, rect.width, rect.height);
   }
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(reader.result));
+    reader.addEventListener("error", () => reject(reader.error));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function addScreenshotFromFile(file) {
+  if (!file || !file.type.startsWith("image/")) {
+    return;
+  }
+
+  const dataUrl = await fileToDataUrl(file);
+  state.screenshots.unshift({
+    id: crypto.randomUUID(),
+    name: file.name || `screenshot-${new Date().toISOString().slice(0, 10)}.png`,
+    dataUrl,
+    createdAt: Date.now(),
+  });
+  renderScreenshots();
+  queueWorkspaceSave();
+}
+
+function renderScreenshots() {
+  screenshotGrid.innerHTML = "";
+
+  if (!state.screenshots.length) {
+    const empty = document.createElement("div");
+    empty.className = "screenshot-card";
+    empty.textContent = "No screenshots yet.";
+    screenshotGrid.append(empty);
+    return;
+  }
+
+  state.screenshots.forEach((shot) => {
+    const card = document.createElement("article");
+    card.className = "screenshot-card";
+
+    const image = document.createElement("img");
+    image.src = shot.dataUrl;
+    image.alt = shot.name;
+
+    const name = document.createElement("input");
+    name.className = "screenshot-name";
+    name.value = shot.name;
+    name.setAttribute("aria-label", "Screenshot name");
+    name.addEventListener("input", () => {
+      shot.name = name.value;
+      queueWorkspaceSave();
+    });
+
+    const actions = document.createElement("div");
+    actions.className = "screenshot-card-actions";
+
+    const copy = document.createElement("button");
+    copy.className = "mini-button";
+    copy.type = "button";
+    copy.textContent = "Copy";
+    copy.addEventListener("click", () => copyScreenshot(shot));
+
+    const download = document.createElement("button");
+    download.className = "mini-button";
+    download.type = "button";
+    download.textContent = "Save";
+    download.addEventListener("click", () => downloadDataUrl(shot.dataUrl, shot.name));
+
+    const remove = document.createElement("button");
+    remove.className = "mini-button delete";
+    remove.type = "button";
+    remove.textContent = "Delete";
+    remove.addEventListener("click", () => {
+      state.screenshots = state.screenshots.filter((item) => item.id !== shot.id);
+      renderScreenshots();
+      queueWorkspaceSave();
+    });
+
+    actions.append(copy, download, remove);
+    card.append(image, name, actions);
+    screenshotGrid.append(card);
+  });
+}
+
+async function copyScreenshot(shot) {
+  try {
+    const blob = await (await fetch(shot.dataUrl)).blob();
+
+    if (navigator.clipboard && window.ClipboardItem) {
+      await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+      return;
+    }
+
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(shot.dataUrl);
+    }
+  } catch (error) {
+    console.warn("Could not copy screenshot.", error);
+  }
+}
+
+function downloadDataUrl(dataUrl, filename) {
+  const link = document.createElement("a");
+  link.href = dataUrl;
+  link.download = filename || "screenshot.png";
+  document.body.append(link);
+  link.click();
+  link.remove();
 }
 
 function pointerPosition(event) {
@@ -499,11 +734,13 @@ taskForm.addEventListener("submit", (event) => {
   state.tasks.unshift(createTask(text));
   taskInput.value = "";
   renderTasks();
+  queueWorkspaceSave();
 });
 
 clearDone.addEventListener("click", () => {
   state.tasks = removeDone(state.tasks);
   renderTasks();
+  queueWorkspaceSave();
 });
 
 eraseMode.addEventListener("click", () => {
@@ -517,6 +754,8 @@ eraseMode.addEventListener("click", () => {
 
 clearCanvas.addEventListener("click", () => {
   context.clearRect(0, 0, canvas.width, canvas.height);
+  state.canvasImage = null;
+  queueWorkspaceSave();
 });
 
 saveCanvas.addEventListener("click", saveDrawingImage);
@@ -538,6 +777,7 @@ typingArea.addEventListener("input", () => {
   tab.value = typingArea.value;
   tab.dirty = true;
   renderCodeTabs();
+  queueWorkspaceSave();
 });
 
 openText.addEventListener("click", () => {
@@ -563,6 +803,7 @@ addCodeTab.addEventListener("click", () => {
   state.activeCodeTabId = tab.id;
   renderCodeTabs();
   typingArea.focus();
+  queueWorkspaceSave();
 });
 
 document.addEventListener("keydown", (event) => {
@@ -610,12 +851,14 @@ canvas.addEventListener("pointermove", (event) => {
 canvas.addEventListener("pointerup", () => {
   state.drawing = false;
   state.lastPoint = null;
+  rememberCanvas();
 });
 
 canvas.addEventListener("pointercancel", () => {
   state.drawing = false;
   state.lastPoint = null;
   hideEraserPreview();
+  rememberCanvas();
 });
 
 canvas.addEventListener("pointerleave", () => {
@@ -626,9 +869,43 @@ canvas.addEventListener("pointerleave", () => {
 
 window.addEventListener("resize", resizeCanvas);
 
+screenshotInput.addEventListener("change", async () => {
+  await Promise.all([...screenshotInput.files].map(addScreenshotFromFile));
+  screenshotInput.value = "";
+});
+
+screenshotDropzone.addEventListener("dragover", (event) => {
+  event.preventDefault();
+  screenshotDropzone.classList.add("active");
+});
+
+screenshotDropzone.addEventListener("dragleave", () => {
+  screenshotDropzone.classList.remove("active");
+});
+
+screenshotDropzone.addEventListener("drop", async (event) => {
+  event.preventDefault();
+  screenshotDropzone.classList.remove("active");
+  await Promise.all([...event.dataTransfer.files].map(addScreenshotFromFile));
+});
+
+document.addEventListener("paste", async (event) => {
+  const files = [...event.clipboardData.items]
+    .filter((item) => item.type.startsWith("image/"))
+    .map((item) => item.getAsFile())
+    .filter(Boolean);
+
+  if (files.length) {
+    await Promise.all(files.map(addScreenshotFromFile));
+  }
+});
+
+loadWorkspaceState();
 renderTasks();
 renderCodeTabs(true);
-toggleTasks.classList.add("active");
-toggleCanvas.classList.add("active");
-toggleTyping.classList.add("active");
-requestAnimationFrame(resizeCanvas);
+renderScreenshots();
+applySavedPanels();
+requestAnimationFrame(() => {
+  resizeCanvas();
+  restoreCanvasImage();
+});
